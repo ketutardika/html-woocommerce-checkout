@@ -52,7 +52,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const restApiUrl = 'https://stagingdeveloper.site/wp-json/wc/v3/';
+        const restApiUrl = 'https://stagingdeveloper.site/wp-json/wc/v3';
         const consumerKey = 'ck_163b2bdae4fa4b1ac67995791ae2cb7c85eb6783';
         const consumerSecret = 'cs_4ae0e0046218ee828fa8a506f0b7bbdaf39ea19e';
 
@@ -61,22 +61,43 @@
             const response = await fetch(`${restApiUrl}/data/countries?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`);
             const countries = await response.json();
             const countrySelect = document.getElementById('country');
-            for (const [code, name] of Object.entries(countries)) {
-                countrySelect.innerHTML += `<option value="${code}">${name}</option>`;
-            }
+            
+            // Clear existing options (if any)
+            countrySelect.innerHTML = '<option value="">Select a country</option>';
+            
+            countries.forEach(country => {
+                const option = document.createElement('option');
+                option.value = country.code; // Set country code as the value
+                option.textContent = country.name; // Set country name as the text
+                countrySelect.appendChild(option);
+            });
         }
 
-        // Load States based on Country
+        // Load States based on selected country
         document.getElementById('country').addEventListener('change', async function () {
-            const country = this.value;
-            const response = await fetch(`${restApiUrl}/data/states/${country}?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`);
-            const states = await response.json();
+            const countryCode = this.value;
             const stateSelect = document.getElementById('state');
-            stateSelect.innerHTML = '';
-            for (const [code, name] of Object.entries(states)) {
-                stateSelect.innerHTML += `<option value="${code}">${name}</option>`;
+
+            // Clear existing states
+            stateSelect.innerHTML = '<option value="">Select a state</option>';
+
+            if (!countryCode) return; // Exit if no country is selected
+
+            const response = await fetch(`${restApiUrl}/data/countries/${countryCode}?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`);
+            const country = await response.json();
+
+            if (country.states && country.states.length > 0) {
+                country.states.forEach(state => {
+                    const option = document.createElement('option');
+                    option.value = state.code; // Set state code as the value
+                    option.textContent = state.name; // Set state name as the text
+                    stateSelect.appendChild(option);
+                });
+            } else {
+                stateSelect.innerHTML = '<option value="">No states available</option>';
             }
         });
+
 
         // Handle Form Submission
         document.getElementById('checkoutForm').addEventListener('submit', async function (event) {
