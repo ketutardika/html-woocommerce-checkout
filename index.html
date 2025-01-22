@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout Form</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Checkout Form</h1>
+        <form id="checkoutForm">
+            <div class="mb-3">
+                <label for="firstName" class="form-label">First Name</label>
+                <input type="text" class="form-control" id="firstName" name="billing[first_name]" required>
+            </div>
+            <div class="mb-3">
+                <label for="lastName" class="form-label">Last Name</label>
+                <input type="text" class="form-control" id="lastName" name="billing[last_name]" required>
+            </div>
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="billing[email]" required>
+            </div>
+            <div class="mb-3">
+                <label for="phone" class="form-label">Phone</label>
+                <input type="tel" class="form-control" id="phone" name="billing[phone]" required>
+            </div>
+            <div class="mb-3">
+                <label for="country" class="form-label">Country</label>
+                <select class="form-select" id="country" name="billing[country]" required></select>
+            </div>
+            <div class="mb-3">
+                <label for="state" class="form-label">State</label>
+                <select class="form-select" id="state" name="billing[state]" required></select>
+            </div>
+            <div class="mb-3">
+                <label for="address1" class="form-label">Address 1</label>
+                <input type="text" class="form-control" id="address1" name="billing[address_1]" required>
+            </div>
+            <div class="mb-3">
+                <label for="address2" class="form-label">Address 2</label>
+                <input type="text" class="form-control" id="address2" name="billing[address_2]">
+            </div>
+            <div class="mb-3">
+                <label for="postcode" class="form-label">Postcode</label>
+                <input type="text" class="form-control" id="postcode" name="billing[postcode]" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Submit</button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const restApiUrl = 'https://stagingdeveloper.site/wp-json/wc/v3/';
+        const consumerKey = 'ck_163b2bdae4fa4b1ac67995791ae2cb7c85eb6783';
+        const consumerSecret = 'cs_4ae0e0046218ee828fa8a506f0b7bbdaf39ea19e';
+
+        // Load Countries
+        async function loadCountries() {
+            const response = await fetch(`${restApiUrl}/data/countries?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`);
+            const countries = await response.json();
+            const countrySelect = document.getElementById('country');
+            for (const [code, name] of Object.entries(countries)) {
+                countrySelect.innerHTML += `<option value="${code}">${name}</option>`;
+            }
+        }
+
+        // Load States based on Country
+        document.getElementById('country').addEventListener('change', async function () {
+            const country = this.value;
+            const response = await fetch(`${restApiUrl}/data/states/${country}?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`);
+            const states = await response.json();
+            const stateSelect = document.getElementById('state');
+            stateSelect.innerHTML = '';
+            for (const [code, name] of Object.entries(states)) {
+                stateSelect.innerHTML += `<option value="${code}">${name}</option>`;
+            }
+        });
+
+        // Handle Form Submission
+        document.getElementById('checkoutForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+            data.line_items = [{ product_id: 937, quantity: 1 }];
+
+            const response = await fetch(`${restApiUrl}/orders?consumer_key=${consumerKey}&consumer_secret=${consumerSecret}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+
+            if (response.ok) {
+                const order = await response.json();
+                window.location.href = `/order-review?order_id=${order.id}`;
+            } else {
+                alert('Failed to create order. Please try again.');
+            }
+        });
+
+        // Initialize
+        loadCountries();
+    </script>
+</body>
+</html>
